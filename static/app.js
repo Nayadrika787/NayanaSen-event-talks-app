@@ -15,10 +15,9 @@ const clearSearchBtn = document.getElementById('clear-search');
 const refreshBtn = document.getElementById('refresh-btn');
 const refreshIcon = document.getElementById('refresh-icon');
 const cacheTimeDisplay = document.getElementById('cache-time-display');
-const themeToggle = document.getElementById('theme-toggle');
-const themeIconLight = document.getElementById('theme-icon-light');
-const themeIconDark = document.getElementById('theme-icon-dark');
+const themeCheckbox = document.getElementById('theme-checkbox');
 const categoryPills = document.getElementById('category-pills');
+const exportCsvBtn = document.getElementById('export-csv-btn');
 
 // Stats Elements
 const statTotal = document.querySelector('#stat-total .stat-value');
@@ -44,34 +43,29 @@ const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 
 // Theme Initializer
+// Note: checkbox checked = Light Mode, unchecked = Dark Mode (Default)
 function initTheme() {
     const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'light') {
         document.documentElement.classList.remove('dark-theme');
-        themeIconLight.classList.add('hidden');
-        themeIconDark.classList.remove('hidden');
+        if (themeCheckbox) themeCheckbox.checked = true;
     } else {
         document.documentElement.classList.add('dark-theme');
-        themeIconLight.classList.remove('hidden');
-        themeIconDark.classList.add('hidden');
+        if (themeCheckbox) themeCheckbox.checked = false;
     }
 }
 
-// Toggle Theme
-function toggleTheme() {
-    const isDark = document.documentElement.classList.contains('dark-theme');
-    if (isDark) {
+// Toggle Theme (Checkbox change handler)
+function handleThemeChange(e) {
+    if (e.target.checked) {
         document.documentElement.classList.remove('dark-theme');
         localStorage.setItem('theme', 'light');
-        themeIconLight.classList.add('hidden');
-        themeIconDark.classList.remove('hidden');
+        showToast('Switched to Light Theme');
     } else {
         document.documentElement.classList.add('dark-theme');
         localStorage.setItem('theme', 'dark');
-        themeIconLight.classList.remove('hidden');
-        themeIconDark.classList.add('hidden');
+        showToast('Switched to Dark Theme');
     }
 }
 
@@ -249,6 +243,9 @@ function renderFeedList() {
                     <span class="item-date">${update.date}</span>
                 </div>
                 <div class="item-actions">
+                    <button class="btn btn-secondary btn-icon copy-text-btn" title="Copy update description" data-id="${update.id}">
+                        <i data-lucide="copy"></i>
+                    </button>
                     <button class="btn btn-secondary btn-icon copy-link-btn" title="Copy update link" data-link="${update.link}">
                         <i data-lucide="link"></i>
                     </button>
@@ -263,6 +260,15 @@ function renderFeedList() {
             </div>
         `;
         
+        // Wire copy text button (copies description text to clipboard)
+        card.querySelector('.copy-text-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const textToCopy = `${update.category} (${update.date}): ${update.plainText}`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showToast('Update details copied to clipboard!');
+            });
+        });
+
         // Wire copy link button
         card.querySelector('.copy-link-btn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -282,6 +288,41 @@ function renderFeedList() {
     });
 
     lucide.createIcons();
+}
+
+// Export Filtered Updates to CSV
+function exportToCSV() {
+    if (filteredUpdates.length === 0) {
+        showToast('No updates to export!');
+        return;
+    }
+
+    const headers = ['Date', 'Category', 'Description', 'Link'];
+    
+    const csvRows = [
+        headers.join(','), // Headers line
+        ...filteredUpdates.map(item => {
+            // Escape double quotes and remove line breaks for flat CSV format
+            const cleanDesc = item.plainText.replace(/"/g, '""').replace(/\r?\n/g, ' ').trim();
+            const cleanDate = item.date.replace(/"/g, '""');
+            const cleanCat = item.category.replace(/"/g, '""');
+            const cleanLink = item.link.replace(/"/g, '""');
+            return `"${cleanDate}","${cleanCat}","${cleanDesc}","${cleanLink}"`;
+        })
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bigquery_release_notes_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Exported ${filteredUpdates.length} items to CSV!`);
 }
 
 // Generate Tweet text based on Template
@@ -363,14 +404,22 @@ function updateCharacterCount() {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme setup
     initTheme();
-    fetchReleaseNotes(false);
+    if (themeCheckbox) {
+        themeCheckbox.addEventListener('change', handleThemeChange);
+    }
     
-    // Theme toggle click
-    themeToggle.addEventListener('click', toggleTheme);
+    // Load notes
+    fetchReleaseNotes(false);
     
     // Refresh click
     refreshBtn.addEventListener('click', () => fetchReleaseNotes(true));
+    
+    // Export CSV click
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', exportToCSV);
+    }
     
     // Search inputs
     searchInput.addEventListener('input', (e) => {

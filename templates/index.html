@@ -38,10 +38,14 @@
                     <i data-lucide="refresh-cw" id="refresh-icon"></i>
                     <span>Refresh</span>
                 </button>
-                <button id="theme-toggle" class="btn btn-icon" title="Toggle Theme">
-                    <i data-lucide="sun" id="theme-icon-light"></i>
-                    <i data-lucide="moon" id="theme-icon-dark" class="hidden"></i>
-                </button>
+                <div class="theme-switch-wrapper">
+                    <span class="theme-switch-label" title="Light Mode"><i data-lucide="sun"></i></span>
+                    <label class="theme-switch" for="theme-checkbox" title="Toggle Dark/Light Mode">
+                        <input type="checkbox" id="theme-checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="theme-switch-label" title="Dark Mode"><i data-lucide="moon"></i></span>
+                </div>
             </div>
         </header>
 
@@ -106,6 +110,15 @@
                             <span class="indicator oth"></span> Other
                         </button>
                     </div>
+                </div>
+
+                <!-- Utilities Card -->
+                <div class="card utils-card">
+                    <h3>Utilities</h3>
+                    <button id="export-csv-btn" class="btn btn-secondary" style="width: 100%; display: flex; justify-content: center; gap: 0.5rem;" title="Export filtered updates to CSV">
+                        <i data-lucide="download"></i>
+                        <span>Export to CSV</span>
+                    </button>
                 </div>
 
                 <!-- Footer info -->
