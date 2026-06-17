@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes Explorer & Social Share</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden">
+            <span id="toast-message"></span>
+        </div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i data-lucide="database"></i>
+                    <div class="logo-glow"></div>
+                </div>
+                <div>
+                    <h1>BigQuery Release Notes</h1>
+                    <p class="subtitle">Stay updated with Google Cloud BigQuery developments</p>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <span class="cache-status" id="cache-time-display">Last sync: --:--:--</span>
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <i data-lucide="refresh-cw" id="refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+                <button id="theme-toggle" class="btn btn-icon" title="Toggle Theme">
+                    <i data-lucide="sun" id="theme-icon-light"></i>
+                    <i data-lucide="moon" id="theme-icon-dark" class="hidden"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="workspace">
+            <!-- Sidebar / Controls Panel -->
+            <aside class="controls-panel">
+                <!-- Search -->
+                <div class="card search-card">
+                    <h3>Search updates</h3>
+                    <div class="search-input-wrapper">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Type keywords (e.g. SQL, Gemini, vector)..." autocomplete="off">
+                        <button id="clear-search" class="hidden"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+
+                <!-- Stats Dashboard -->
+                <div class="card stats-card">
+                    <h3>Dashboard</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item" id="stat-total">
+                            <span class="stat-value">0</span>
+                            <span class="stat-label">Total Items</span>
+                        </div>
+                        <div class="stat-item" id="stat-features">
+                            <span class="stat-value">0</span>
+                            <span class="stat-label">Features</span>
+                        </div>
+                        <div class="stat-item" id="stat-issues">
+                            <span class="stat-value">0</span>
+                            <span class="stat-label">Issues</span>
+                        </div>
+                        <div class="stat-item" id="stat-announcements">
+                            <span class="stat-value">0</span>
+                            <span class="stat-label">Announcements</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="card filter-card">
+                    <h3>Filter by Type</h3>
+                    <div class="filter-pills" id="category-pills">
+                        <button class="pill active" data-category="all">All Updates</button>
+                        <button class="pill" data-category="feature">
+                            <span class="indicator feat"></span> Features
+                        </button>
+                        <button class="pill" data-category="issue">
+                            <span class="indicator iss"></span> Issues / Fixes
+                        </button>
+                        <button class="pill" data-category="announcement">
+                            <span class="indicator ann"></span> Announcements
+                        </button>
+                        <button class="pill" data-category="deprecation">
+                            <span class="indicator dep"></span> Deprecations
+                        </button>
+                        <button class="pill" data-category="changed">
+                            <span class="indicator chg"></span> Changed
+                        </button>
+                        <button class="pill" data-category="other">
+                            <span class="indicator oth"></span> Other
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer info -->
+                <div class="side-info">
+                    <p>Source feed: <a href="https://docs.cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener">BigQuery RSS <i data-lucide="external-link" class="inline-icon"></i></a></p>
+                    <p class="copyright">&copy; 2026 BigQuery Release Notes Explorer</p>
+                </div>
+            </aside>
+
+            <!-- Main Content: Feed items -->
+            <main class="feed-container">
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state hidden">
+                    <div class="spinner-wrapper">
+                        <div class="spinner"></div>
+                    </div>
+                    <p>Fetching the latest release notes from Google Cloud...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state hidden">
+                    <i data-lucide="info" class="empty-icon"></i>
+                    <h2>No updates found</h2>
+                    <p>Try refining your search terms or filters, or hit the refresh button above.</p>
+                </div>
+
+                <!-- Feed list -->
+                <div id="feed-list" class="feed-list">
+                    <!-- Cards injected via JS -->
+                </div>
+            </main>
+        </div>
+
+        <!-- Tweet Customizer Modal -->
+        <div id="tweet-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h2><i data-lucide="twitter" class="modal-title-icon"></i> Create Tweet Draft</h2>
+                    <button class="close-btn" id="close-modal-btn"><i data-lucide="x"></i></button>
+                </header>
+                
+                <div class="modal-body">
+                    <!-- Original Note Summary -->
+                    <div class="update-preview-box">
+                        <div class="preview-badge-row">
+                            <span id="preview-badge" class="badge">Feature</span>
+                            <span id="preview-date" class="preview-date">June 15, 2026</span>
+                        </div>
+                        <div id="preview-text" class="preview-text">
+                            Preview of the release note content goes here...
+                        </div>
+                    </div>
+
+                    <!-- Customizer settings -->
+                    <div class="tweet-settings">
+                        <label>Template Styles</label>
+                        <div class="template-selector">
+                            <button class="template-btn active" data-template="tech-news">🚀 Professional Tech News</button>
+                            <button class="template-btn" data-template="quick-tip">💡 Quick Tip / Insight</button>
+                            <button class="template-btn" data-template="minimal">⚡ Minimal Summary</button>
+                        </div>
+                    </div>
+
+                    <!-- Character Limit & Text Area -->
+                    <div class="tweet-composer">
+                        <div class="composer-header">
+                            <label for="tweet-textarea">Compose Tweet</label>
+                            <span id="char-counter" class="char-counter">0 / 280</span>
+                        </div>
+                        <textarea id="tweet-textarea" rows="6" placeholder="What would you like to tweet?"></textarea>
+                        <div class="composer-warnings">
+                            <span id="length-warning" class="warning-text hidden"><i data-lucide="alert-triangle"></i> This exceeds standard X character limit (280) and may require Premium or be split.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="modal-footer">
+                    <button class="btn btn-secondary" id="copy-tweet-btn">
+                        <i data-lucide="copy"></i> Copy Text
+                    </button>
+                    <button class="btn btn-twitter" id="post-tweet-btn">
+                        <i data-lucide="send"></i> Post on X (Twitter)
+                    </button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
