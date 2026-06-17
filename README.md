@@ -19,7 +19,10 @@ A sleek, modern web application that fetches the latest **Google Cloud BigQuery*
 - **Modern UI Design System**:
   - Default deep tech dark-mode with glassmorphic cards and glowing elements.
   - Fully responsive layout for desktop and mobile screen sizes.
-  - Real-time Light / Dark mode toggle (persisted via `localStorage`).
+  - Smooth slider toggle switch in the header that overrides root CSS variables for theme selection (persisted via `localStorage`).
+- **Utility Tools**:
+  - **Copy to Clipboard**: Quick copy button on each update card to instantly copy the plain-text description.
+  - **Export to CSV**: Export currently searched/filtered release notes to a CSV spreadsheet file, handling double quotes and line breaks safely.
 
 ---
 
